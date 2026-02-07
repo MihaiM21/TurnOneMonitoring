@@ -1,0 +1,325 @@
+{
+  "dashboard": {
+    "title": "T1API Monitoring Dashboard",
+    "tags": ["t1api", "monitoring", "observability"],
+    "timezone": "browser",
+    "refresh": "5s",
+    "time": {
+      "from": "now-30m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(api_requests_total[1m])",
+            "legendFormat": "{{method}} {{endpoint}} ({{tier}})"
+          }
+        ],
+        "yaxes": [
+          {"label": "requests/sec", "show": true},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(api_errors_total[1m])",
+            "legendFormat": "{{endpoint}} - {{error_type}}"
+          }
+        ],
+        "yaxes": [
+          {"label": "errors/sec", "show": true},
+          {"show": false}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.1], "type": "gt"},
+              "query": {"params": ["A", "5m", "now"]}
+            }
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "title": "Active Requests",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "api_active_requests"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 20, "color": "yellow"},
+                {"value": 50, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "CPU Usage %",
+        "type": "gauge",
+        "gridPos": {"x": 6, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "api_cpu_usage_percent"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 60, "color": "yellow"},
+                {"value": 80, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Memory Usage %",
+        "type": "gauge",
+        "gridPos": {"x": 12, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "api_memory_usage_percent"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 70, "color": "yellow"},
+                {"value": 90, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Memory Usage (MB)",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "api_memory_usage_bytes / 1024 / 1024"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "decmbytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Response Time (95th Percentile)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{endpoint}} ({{tier}})"
+          }
+        ],
+        "yaxes": [
+          {"label": "seconds", "show": true, "format": "s"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Response Time (50th Percentile)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{endpoint}} ({{tier}})"
+          }
+        ],
+        "yaxes": [
+          {"label": "seconds", "show": true, "format": "s"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Requests by Tier",
+        "type": "piechart",
+        "gridPos": {"x": 0, "y": 20, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(api_requests_total) by (tier)",
+            "legendFormat": "{{tier}}"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Top Endpoints (by request count)",
+        "type": "table",
+        "gridPos": {"x": 8, "y": 20, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "topk(10, sum(api_requests_total) by (endpoint))",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {"Time": true}
+            }
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Error Count by Endpoint",
+        "type": "table",
+        "gridPos": {"x": 16, "y": 20, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "topk(10, sum(api_errors_total) by (endpoint))",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {"Time": true}
+            }
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Request/Response Size",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 28, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(api_request_size_bytes_sum[5m]) / rate(api_request_size_bytes_count[5m])",
+            "legendFormat": "Request Size (avg)"
+          },
+          {
+            "expr": "rate(api_response_size_bytes_sum[5m]) / rate(api_response_size_bytes_count[5m])",
+            "legendFormat": "Response Size (avg)"
+          }
+        ],
+        "yaxes": [
+          {"label": "bytes", "show": true, "format": "bytes"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Background Jobs",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 28, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "api_background_jobs_processed_total"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "palette-classic"}
+          }
+        }
+      },
+      {
+        "id": 14,
+        "title": "Background Job Failures",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 28, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "api_background_jobs_failed_total"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "yellow"},
+                {"value": 5, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 15,
+        "title": "Rate Limit Hits",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 32, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(api_rate_limit_hits_total[1m])",
+            "legendFormat": "{{tier}} - {{endpoint}}"
+          }
+        ],
+        "yaxes": [
+          {"label": "hits/sec", "show": true},
+          {"show": false}
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}
